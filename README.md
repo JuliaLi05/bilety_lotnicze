@@ -82,11 +82,11 @@ Aby uzyskać dostęp do funkcji administracyjnych (edycja, usuwanie, podgląd pa
 **Domyślne hasło administratora:`admin123`.**
  
 ## Struktura Plików 
-`main.cpp` – główna pętla programu, obsługa menu i interfejsu użytkownika
-`rezerwacja.cpp` – implementacja logiki biznesowej i operacji na plikach
-`rezerwacja.h` – plik nagłówkowy z definicjami struktur (`Lot`, `Rezerwacja`) i stałych.
-`Makefile` – skrypt kompilacji
-`bazadb.bin` – Plik binarny z bazą lotów (tworzony automatycznie).
-`rezerwacjedb.bin` – Plik binarny z bazą rezerwacji (tworzony automatycznie).
+-`main.cpp` – główna pętla programu, obsługa menu i interfejsu użytkownika
+-`rezerwacja.cpp` – implementacja logiki biznesowej i operacji na plikach
+-`rezerwacja.h` – plik nagłówkowy z definicjami struktur (`Lot`, `Rezerwacja`) i stałych.
+-`Makefile` – skrypt kompilacji
+-`bazadb.bin` – Plik binarny z bazą lotów (tworzony automatycznie).
+-`rezerwacjedb.bin` – Plik binarny z bazą rezerwacji (tworzony automatycznie).
 
 ## Autor:Julia Litawa

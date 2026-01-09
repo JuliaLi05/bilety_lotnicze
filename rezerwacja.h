@@ -1,17 +1,14 @@
 #ifndef REZERWACJE_H
 #define REZERWACJE_H
 
-#define MIASTO_MAKS 30
-#define IMIE_MAKS 20
-#define NAZWISKO_MAKS 30
-
+#define MAXLINE 60
 #define BAZA_LOTY "bazadb.bin"
 #define BAZA_REZERWACJE "rezerwacjedb.bin"
 
 struct Lot{
     int id_lotu;
-    char miasto_odlotu[MIASTO_MAKS];
-    char miasto_przylotu[MIASTO_MAKS];
+    char miasto_odlotu[MAXLINE];
+    char miasto_przylotu[MAXLINE];
     int dostepne_miejsca;
     double cena;
 };
@@ -19,8 +16,8 @@ struct Lot{
 struct Rezerwacja{
     int id_rezerwacja;
     int id_lotu;
-    char imie[IMIE_MAKS];
-    char nazwisko[NAZWISKO_MAKS];
+    char imie[MAXLINE];
+    char nazwisko[MAXLINE];
 };
 
 void stworzBazeDanych();

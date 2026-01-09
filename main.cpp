@@ -1,4 +1,6 @@
 #include <iostream>
+#include <iomanip>
+#include <cstring>
 #include <limits>
 #include <string>
 #include <cstdlib>
@@ -95,9 +97,21 @@ int main() {
                     std::cout << "Podaj ID lotu: ";
                         if (!wczytajInt(id)) break;
                     std::cout << "Podaj imie: ";
-                        if (!(std::cin >> imie)) break;
+                        if (!(std::cin >> std::setw(MAXLINE) >> imie)) break;
+                        if (std::strlen(imie)>= MAXLINE - 1)
+                        {
+                                std::cout << "Imie jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                                break;
+                        }  
                     std::cout << "Podaj nazwisko: ";
-                        if (!(std::cin >> nazwisko)) break;
+                        if (!(std::cin >> std::setw(MAXLINE) >> nazwisko)) break;
+                        if (std::strlen(nazwisko)>= MAXLINE - 1)
+                        {
+                                std::cout << "Nazwisko jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                                break;
+                        } 
                     rezerwacjaBiletu(id, imie, nazwisko);
                     break;
                 case 3:
@@ -180,3 +194,4 @@ int main() {
     
     return 0;
 }
+

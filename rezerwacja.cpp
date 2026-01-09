@@ -1,359 +1,197 @@
-#include <fstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <limits>
+#include <string>
 #include <cstring>
-#include <cstdio>
-#include <algorithm>
+#include <cstdlib>
 #include "rezerwacja.h"
+#define HASLO "admin123"
 
-static long miejsceLotuWPliku(int id)
-{
-    std::ifstream plik(BAZA_LOTY, std::ios::binary);
-    if (!plik) return -1;
-    Lot lot;
-    long rekord = 0;
-    while (plik.read(reinterpret_cast<char*>(&lot), sizeof(Lot))) {
-        if(lot.id_lotu == id)
-        {
-            return rekord;
-        }
-        rekord = static_cast<long>(plik.tellg());
-    }
-    return -1;
+void czyscKonsole(){
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
 }
 
-static int liczbaRezerwacjiDlaLotu(int id_lotu)
-{
-    std::ifstream plik(BAZA_REZERWACJE, std::ios::binary);
-    if (!plik) return 0;
-    Rezerwacja rezerwacja{};
-    int cnt = 0;
-    while (plik.read(reinterpret_cast<char*>(&rezerwacja), sizeof(Rezerwacja))) {
-        if (rezerwacja.id_lotu == id_lotu) cnt++;
-    }
-    return cnt;
+void czekajNaEnter(){
+    std::cout << "\nNacisnij ENTER aby kontynuowac...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
+    std::cin.get(); 
 }
 
-static int ostatniaRezerwacjaID()
-{
-    std::ifstream plik(BAZA_REZERWACJE, std::ios::binary);
-    if(!plik)
-    {
-        return 0;
-    }
-    Rezerwacja rezerwacja{};
-    int maxId = 0;
-    while (plik.read(reinterpret_cast<char*>(&rezerwacja), sizeof(Rezerwacja))) 
-    {
-        if (rezerwacja.id_rezerwacja > maxId) maxId = rezerwacja.id_rezerwacja;
-    }
-    return maxId;
+void menuKlient(){
+    std::cout << "\n--- MENU KLIENTA ---\n";
+    std::cout << "1. Wyswietl dostepne loty\n";
+    std::cout << "2. Zarezerwuj bilet\n";
+    std::cout << "3. Przelacz na tryb ADMIN\n";
+    std::cout << "4. Wyjdz\n";
+    std::cout << "Wybierz opcje: ";
 }
 
-static bool usunRezerwacjeLotu(int id_lotu)
-{
-    std::ifstream in(BAZA_REZERWACJE, std::ios::binary);
-    if (!in) 
+void menuAdmina() {
+    std::cout << "\n--- MENU ADMINISTRATORA ---\n";
+    std::cout << "1. Wyswietl wszystkie loty\n";
+    std::cout << "2. Dodaj nowy lot\n";
+    std::cout << "3. Usun lot\n";
+    std::cout << "4. Modyfikuj lot (miejsca/cena)\n";
+    std::cout << "5. Wyswietl pasazerow lotu\n";
+    std::cout << "6. Przelacz na tryb KLIENT\n";
+    std::cout << "7. Wyjdz z programu\n";
+    std::cout << "Wybierz opcje: ";
+}
+
+static bool wczytajInt(int& x) {
+    if (std::cin >> x)
     {
         return true;
     }
-    std::ofstream out("temp_rez.bin", std::ios::binary | std::ios::trunc);
-    if (!out) return false;
-    Rezerwacja rezerwacja{};
-    while (in.read(reinterpret_cast<char*>(&rezerwacja), sizeof(Rezerwacja))) 
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "Blad wczytywania. Podaj liczbe.\n";
+    return false;
+}
+
+static bool wczytajDouble(double& x) {
+    if (std::cin >> x)
     {
-        if (rezerwacja.id_lotu != id_lotu) 
+        return true;
+    }
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "Blad wczytywania. Podaj liczbe (np. 199.99).\n";
+    return false;
+}
+
+int main() {
+    czyscKonsole();
+    int tryb = 0;
+    int wybor = 0;
+    stworzBazeDanych();
+    do{
+        if(tryb == 0)
         {
-            out.write(reinterpret_cast<const char*>(&rezerwacja), sizeof(Rezerwacja));
+            menuKlient();
         }
-    }
-    in.close();
-    out.close();
-    std::remove(BAZA_REZERWACJE);
-    if (std::rename("temp_rez.bin", BAZA_REZERWACJE) != 0) 
-    {
-        return false;
-    }
-    return true;
-}
-
-void stworzBazeDanych()
-{
-    std::ofstream loty(BAZA_LOTY, std::ios::binary | std::ios::app);
-    std::ofstream rezerwacje(BAZA_REZERWACJE, std::ios::binary | std::ios::app);
-    if (!loty || !rezerwacje)
-    {
-        std::cout << "Blad:\nNie udalo sie otworzyc/utworzyc plikow bazy danych.";
-        return;
-    }
-}
-
-void wyswietlLoty()
-{
-    std::ifstream plik(BAZA_LOTY, std::ios::binary);
-    if (!plik) {
-        std::cout << "Blad bazy danych.";
-        return;
-    }
-    plik.seekg(0, std::ios::end);
-    if (plik.tellg() == 0) {
-        std::cout << "Brak dostepnych lotow.";
-        return;
-    }
-    plik.seekg(0, std::ios::beg);
-    std::cout << "\n LOTY \n";
-    std::cout << "| ID  | Odlot | Przylot | Miejsca | Cena |\n";
-    Lot lot;
-    while (plik.read(reinterpret_cast<char*>(&lot), sizeof(Lot))) {
-        std::cout << "| " << lot.id_lotu
-            << " | " << lot.miasto_odlotu
-            << " | " << lot.miasto_przylotu
-            << " | " << lot.dostepne_miejsca
-            << " | " << std::fixed << std::setprecision(2) << lot.cena
-            << " PLN |\n";
-        std::cout << "----------------------------------------\n";
-    }
-}
-
-int znajdzLot(int id, Lot *lot){
-    if (!lot) return 0;
-    long rekord = miejsceLotuWPliku(id);
-    if (rekord == -1) return 0;
-    std::ifstream plik(BAZA_LOTY, std::ios::binary);
-    if (!plik) return 0;
-    plik.seekg(rekord, std::ios::beg);
-    if (!plik.read(reinterpret_cast<char*>(lot), sizeof(Lot))) 
-    {
-        return 0;
-    }
-    return 1;
-
-}
-
-void rezerwacjaBiletu(int id_lotu, const char*imie, const char* nazwisko){
-    if (!imie || !nazwisko) 
-    {
-        std::cout << "Bledne dane pasazera!";
-        return;
-    }
-    Lot lot{};
-    long rekord = miejsceLotuWPliku(id_lotu);
-    if (id_lotu <= 0 || rekord == -1 || !znajdzLot(id_lotu, &lot)) 
-    {
-        std::cout << "Nie znaleziono lotu o podanym numerze!";
-        return;
-    }
-    if (lot.dostepne_miejsca <= 0) 
-    {
-        std::cout << "Brak miejsc w locie numer " << id_lotu;
-        return;
-    }
-    {
-        std::fstream plik(BAZA_LOTY, std::ios::binary | std::ios::in | std::ios::out);
-        if (!plik) 
+        else
         {
-            std::cout << "Blad polaczenia z baza danych!";
-            return;
+            menuAdmina();
         }
-        lot.dostepne_miejsca--;
-        plik.seekp(rekord, std::ios::beg);
-        plik.write(reinterpret_cast<const char*>(&lot), sizeof(Lot));
-        if (!plik) {
-            std::cout << "Blad zapisu do bazy lotow!";
-            return;
+        if (!wczytajInt(wybor)) 
+        {
+            continue;
         }
-    }
-    {
-        std::ofstream plik(BAZA_REZERWACJE, std::ios::binary | std::ios::app);
-        if (!plik) {
-            std::fstream floty(BAZA_LOTY, std::ios::binary | std::ios::in | std::ios::out);
-            if (floty) {
-                Lot poprawka = lot;
-                poprawka.dostepne_miejsca++; // cofamy
-                floty.seekp(rekord, std::ios::beg);
-                floty.write(reinterpret_cast<const char*>(&poprawka), sizeof(Lot));
+        int id = 0, miejsca = 0;
+        double cena = 0.0;
+        char imie[MAXLINE]{};
+        char nazwisko[MAXLINE]{};
+        char odlot[MAXLINE]{};
+        char przylot[MAXLINE]{};  
+        char haslo[20]{};
+        if(tryb == 0)
+        {
+            switch (wybor) {
+                case 1: wyswietlLoty(); break;
+                case 2:
+                    std::cout << "Podaj ID lotu: ";
+                        if (!wczytajInt(id)) break;
+                    std::cout << "Podaj imie: ";
+                        if (!(std::cin >> std::setw(MAXLINE) >> imie)) break;
+                        if (std::strlen(imie) >= MAXLINE - 1) 
+                        {
+                            std::cout << "Imie jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            break;
+                        }
+                    std::cout << "Podaj nazwisko: ";
+                    if (!(std::cin >> std::setw(MAXLINE) >> nazwisko)) break;
+                    if (std::strlen(nazwisko) >= MAXLINE - 1) 
+                    {
+                        std::cout << "Nazwisko jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
+                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                        break;
+                    }
+                    rezerwacjaBiletu(id, imie, nazwisko);
+                    break;
+                case 3:
+                    std::cout << "Podaj haslo do konta administratora: ";
+                    if (!(std::cin >> haslo))
+                    {
+                        break;
+                    }
+                    if (std::string(haslo) == HASLO) 
+                    {
+                        tryb = 1;
+                        std::cout << "Uzyskano dostep do konta administratora.";
+                    }
+                    else 
+                    {
+                        std::cout << "Odmowa dostepu, podano bledne haslo.";
+                    }
+                    break;
+                case 4:
+                    std::cout << "Dziekujemy za korzystanie z naszych uslug!";
+                    wybor = 7;
+                    break;
+                default:
+                    std::cout << "Wybrano niedostepna opcje. Prosze ponownie dokonac wyboru.";
+                    break;
+                }
             }
-            std::cout << "Blad polaczenia z baza danych!";
-            return;
-        }
-        Rezerwacja rezerwacja{};
-        rezerwacja.id_rezerwacja = ostatniaRezerwacjaID() + 1;
-        rezerwacja.id_lotu = id_lotu;
-        std::strncpy(rezerwacja.imie, imie, IMIE_MAKS);
-        rezerwacja.imie[IMIE_MAKS - 1] = '\0';
-        std::strncpy(rezerwacja.nazwisko, nazwisko, NAZWISKO_MAKS);
-        rezerwacja.nazwisko[NAZWISKO_MAKS - 1] = '\0';
-        plik.write(reinterpret_cast<const char*>(&rezerwacja), sizeof(Rezerwacja));
-        if (!plik) {
-            std::fstream floty(BAZA_LOTY, std::ios::binary | std::ios::in | std::ios::out);
-            if (floty) {
-                Lot poprawka = lot;
-                poprawka.dostepne_miejsca++; // cofamy
-                floty.seekp(rekord, std::ios::beg);
-                floty.write(reinterpret_cast<const char*>(&poprawka), sizeof(Lot));
+            else{
+                switch (wybor) {
+                    case 1: wyswietlLoty(); break;
+                    case 2:
+                        std::cout << "Podaj nowy numer lotu: ";
+                        if (!wczytajInt(id)) break;
+                        std::cout << "Podaj miasto odlotu: ";
+                        if (!(std::cin >> odlot)) break;
+                        std::cout << "Podaj miasto przylotu: ";
+                        if (!(std::cin >> przylot)) break;
+                        std::cout << "Podaj liczbe miejsc: ";
+                        if (!wczytajInt(miejsca)) break;
+                        std::cout << "Podaj cene: ";
+                        if (!wczytajDouble(cena)) break;
+                        dodajLot(id, odlot, przylot, miejsca, cena);
+                        break;
+                    case 3:
+                        std::cout << "Podaj numer lotu do usuniecia: ";
+                        if (!wczytajInt(id)) break;
+                        usunLot(id);
+                        break;
+                    case 4:
+                        std::cout << "Podaj numer lotu do modyfikacji: ";
+                        if (!wczytajInt(id)) break;
+                        std::cout << "Podaj nowa liczbe miejsc: ";
+                        if (!wczytajInt(miejsca)) break;
+                        std::cout << "Podaj nowa cene: ";
+                        if (!wczytajDouble(cena)) break;
+                        edytujLot(id, miejsca, cena);
+                        break;
+                    case 5:
+                        std::cout << "Podaj numer lotu, dla ktorego chcesz uzyskac dane pasazerow: ";
+                        if (!wczytajInt(id)) break;
+                        listaPasazerow(id);
+                        break;
+                    case 6:
+                        tryb = 0;
+                        std::cout << "Powrot do trybu klienta...";
+                        break;
+                    case 7:
+                        std::cout << "Zakonczono dzialanie programu...";
+                        break;
+                    default:
+                        std::cout << "Wybrano niedostepna opcje. Prosze ponownie dokonac wyboru.";
+                        break;
             }
-            std::cout << "Blad zapisu do bazy rezerwacji!";
-            return;
         }
-    }
-    std::cout << "Dokonano rezerwacji.";
-}
-
-void dodajLot(int id_lotu, const char* odlot, const char*przylot, int miejsca, double cena){
-    if (!odlot || !przylot) 
-    {
-        std::cout << "Bledne dane miast!";
-        return;
-    }
-    if(miejsca <= 0 || cena <= 0.0 || id_lotu <= 0)
-    {
-        std::cout << "Jedna z ponizszych danych nie jest dodatnia: ID lotu, cena, ilosc dostepnych miejsc.";
-        return;
-    }
-    if(miejsceLotuWPliku(id_lotu) != -1)
-    {
-        std::cout << "Istnieje juz lot o takim numerze!";
-        return;
-    }
-    std::ofstream plik(BAZA_LOTY, std::ios::binary | std::ios::app);
-    if (!plik) {
-        std::cout << "Blad polaczenia z baza danych!";
-        return;
-    }
-    Lot nowy{};
-    nowy.id_lotu = id_lotu;
-    nowy.cena = cena;
-    nowy.dostepne_miejsca = miejsca;
-    std::strncpy(nowy.miasto_odlotu, odlot, MIASTO_MAKS - 1);
-    nowy.miasto_odlotu[MIASTO_MAKS - 1] = '\0';
-    std::strncpy(nowy.miasto_przylotu, przylot, MIASTO_MAKS - 1);
-    nowy.miasto_przylotu[MIASTO_MAKS - 1] = '\0';
-    plik.write(reinterpret_cast<const char*>(&nowy), sizeof(Lot));
-    if (!plik) 
-    {
-        std::cout << "Blad zapisu lotu!";
-        return;
-    }
-    std::cout << "Nowy lot o numerze " << id_lotu << " zostal dodany.";
-}
-
-void usunLot(int id_lotu){
-    if (id_lotu <= 0) 
-    {
-        std::cout << "Bledny numer lotu!";
-        return;
-    }
-    long wiersz = miejsceLotuWPliku(id_lotu);
-    if(wiersz < 0)
-    {
-        std::cout << "Podany lot nie istnieje!";
-        return;
-    }
-    std::ifstream in(BAZA_LOTY, std::ios::binary);
-    std::ofstream out("temp_data.bin", std::ios::binary | std::ios::trunc);
-    if (!in || !out) 
-    {
-        std::cout << "Nie udalo sie otworzyc plikow!";
-        return;
-    }
-    Lot lot;
-    while (in.read(reinterpret_cast<char*>(&lot), sizeof(Lot))) 
-    {
-        if (lot.id_lotu != id_lotu) 
-        {
-            out.write(reinterpret_cast<const char*>(&lot), sizeof(Lot));
+        if(wybor != 4 && wybor != 7){
+            czekajNaEnter();
+            czyscKonsole();
         }
-    }
-    in.close();
-    out.close();
-    std::remove(BAZA_LOTY);
-    if (std::rename("temp_data.bin", BAZA_LOTY) != 0) {
-        std::cout << "Blad podczas podmiany pliku bazy lotow!";
-        return;
-    }
-    if (!usunRezerwacjeLotu(id_lotu)) {
-        std::cout << "Lot usuniety, ale wystapil blad przy usuwaniu rezerwacji tego lotu!";
-        return;
-    }
-    std::cout << "Lot numer " << id_lotu << " zostal usuniety!";
-}
-
-void listaPasazerow(int id_lotu){
-    if(id_lotu <= 0)
-    {
-        std::cout << "Bledny numer lotu!";
-        return;
-    }
-    Lot lot;
-    if(!znajdzLot(id_lotu, &lot))
-    {
-        std::cout << "Lot o podanym numerze nie istnieje!";
-        return;
-    }
-    std::ifstream plik(BAZA_REZERWACJE, std::ios::binary);
-    if (!plik) 
-    {
-        std::cout << "Blad polaczenia z baza danych!";
-        return;
-    }
-    std::cout << "Pasazerowie lotu numer" << id_lotu;
-    std::cout << "\nID Rezerwacji| Imie| Nazwisko\n";
-    std::cout << "----------------------------\n";
-    Rezerwacja rezerwacja;
-    bool czyZnaleziono = false;
-    while(plik.read(reinterpret_cast<char*>(&rezerwacja), sizeof(Rezerwacja)))
-    {
-        if(rezerwacja.id_lotu == id_lotu)
-        {
-            std::cout << "| " << rezerwacja.id_rezerwacja << " | " << rezerwacja.imie << " | " << rezerwacja.nazwisko << " |\n";
-            czyZnaleziono = true;
-        }
-    }
-    if(!czyZnaleziono){
-        std::cout << "Brak rezerwacji!";
-    }
-}
-
-void edytujLot(int lot_id, int ilosc_miejsc, double cena){
-    long pozycja_lotu = miejsceLotuWPliku(lot_id);
-    if(lot_id <= 0 || pozycja_lotu ==-1)
-    {
-        std::cout << "Bledny numer lotu!";
-        return;
-    }
-    if(ilosc_miejsc <=0 || cena <= 0)
-    {
-        std::cout << "Bledna ilosc miejsc, badz cena. Obydwie wartosci musza byc dodatnie.";
-        return;
-    }
-    int zarezerwowane = liczbaRezerwacjiDlaLotu(lot_id);
-    if (ilosc_miejsc < zarezerwowane) {
-        std::cout << "Nie mozna ustawic liczby miejsc na " << ilosc_miejsc
-            << ", bo juz zarezerwowano " << zarezerwowane << " miejsc.";
-        return;
-    }
-    std::fstream plik(BAZA_LOTY, std::ios::binary | std::ios::in | std::ios::out);
-    if (!plik) 
-    {
-        std::cout << "Blad polaczenia z baza danych!";
-        return;
-    }
-    Lot lot;
-    plik.seekg(pozycja_lotu, std::ios::beg);
-    if (!plik.read(reinterpret_cast<char*>(&lot), sizeof(Lot))) 
-    {
-        std::cout << "Blad odczytu lotu!";
-        return;
-    }
-    lot.dostepne_miejsca = ilosc_miejsc - zarezerwowane;
-    lot.cena = cena;
-    plik.seekp(pozycja_lotu, std::ios::beg);
-    plik.write(reinterpret_cast<const char*>(&lot), sizeof(Lot));
-    if (!plik) 
-    {
-        std::cout << "Blad zapisu lotu!";
-        return;
-    }
-    std::cout << "Lot zostal zaaktualizowny!";
+    }while(wybor!=7);
+    
+    return 0;
 }
 

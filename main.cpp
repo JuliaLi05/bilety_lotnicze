@@ -1,8 +1,8 @@
-#include <iostream>
 #include <iomanip>
-#include <cstring>
+#include <iostream>
 #include <limits>
 #include <string>
+#include <cstring>
 #include <cstdlib>
 #include "rezerwacja.h"
 #define HASLO "admin123"
@@ -84,10 +84,10 @@ int main() {
         }
         int id = 0, miejsca = 0;
         double cena = 0.0;
-        char imie[IMIE_MAKS]{};
-        char nazwisko[NAZWISKO_MAKS]{};
-        char odlot[MIASTO_MAKS]{};
-        char przylot[MIASTO_MAKS]{};  
+        char imie[MAXLINE]{};
+        char nazwisko[MAXLINE]{};
+        char odlot[MAXLINE]{};
+        char przylot[MAXLINE]{};  
         char haslo[20]{};
         if(tryb == 0)
         {
@@ -98,20 +98,20 @@ int main() {
                         if (!wczytajInt(id)) break;
                     std::cout << "Podaj imie: ";
                         if (!(std::cin >> std::setw(MAXLINE) >> imie)) break;
-                        if (std::strlen(imie)>= MAXLINE - 1)
+                        if (std::strlen(imie) >= MAXLINE - 1) 
                         {
-                                std::cout << "Imie jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
-                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                                break;
-                        }  
+                            std::cout << "Imie jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
+                            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            break;
+                        }
                     std::cout << "Podaj nazwisko: ";
-                        if (!(std::cin >> std::setw(MAXLINE) >> nazwisko)) break;
-                        if (std::strlen(nazwisko)>= MAXLINE - 1)
-                        {
-                                std::cout << "Nazwisko jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
-                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                                break;
-                        } 
+                    if (!(std::cin >> std::setw(MAXLINE) >> nazwisko)) break;
+                    if (std::strlen(nazwisko) >= MAXLINE - 1) 
+                    {
+                        std::cout << "Nazwisko jest za dlugie (max " << (MAXLINE - 1) << " znakow).\n";
+                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                        break;
+                    }
                     rezerwacjaBiletu(id, imie, nazwisko);
                     break;
                 case 3:
@@ -194,4 +194,5 @@ int main() {
     
     return 0;
 }
+
 
